@@ -322,7 +322,6 @@ def handle_create_task(title, org='中书省', official='中书令', priority='n
     log.info(f'创建任务: {task_id} | {title[:40]}')
 
     # 自动派发给太子 Agent（后台异步，不阻塞响应）
-    # 发送给 main (太子) 而不是 zhongshu，让太子走正常流程分拣→中书省
     def dispatch_to_agent():
         try:
             # 前置检查 Gateway 是否在线
@@ -337,14 +336,26 @@ def handle_create_task(title, org='中书省', official='中书令', priority='n
                 f'直接用 kanban_update.py 更新状态即可。\n'
                 f'请立即转交中书省起草执行方案。'
             )
-            cmd = ['openclaw', 'agent', '--agent', 'main', '-m', msg,
+            cmd = ['openclaw', 'agent', '--agent', 'taizi', '-m', msg,
                    '--deliver', '--channel', 'feishu', '--timeout', '300']
-            log.info(f'正在派发 {task_id} 给太子 Agent...')
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=310)
-            if result.returncode == 0:
-                log.info(f'✅ {task_id} 已派发给太子 Agent')
-            else:
-                log.warning(f'⚠️ {task_id} 派发失败: {result.stderr[:200]}')
+            # 带重试的派发（最多3次，指数退避）
+            max_retries = 3
+            for attempt in range(1, max_retries + 1):
+                log.info(f'正在派发 {task_id} 给太子 Agent (第{attempt}次)...')
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=310)
+                if result.returncode == 0:
+                    log.info(f'✅ {task_id} 已派发给太子 Agent')
+                    return
+                err_msg = result.stderr[:200] if result.stderr else result.stdout[:200]
+                log.warning(f'⚠️ {task_id} 派发失败(第{attempt}次): {err_msg}')
+                if attempt < max_retries:
+                    import time
+                    wait = 5 * attempt  # 5s, 10s
+                    log.info(f'⏳ {wait}秒后重试...')
+                    time.sleep(wait)
+            log.error(f'❌ {task_id} 派发最终失败，已重试{max_retries}次')
+        except subprocess.TimeoutExpired:
+            log.error(f'❌ {task_id} 派发超时(310s)，LLM可能无响应')
         except Exception as e:
             log.warning(f'⚠️ {task_id} 派发异常: {e}')
     threading.Thread(target=dispatch_to_agent, daemon=True).start()
@@ -397,7 +408,6 @@ def handle_review_action(task_id, action, comment=''):
 # ══ Agent 在线状态检测 ══
 
 _AGENT_DEPTS = [
-    {'id':'main',    'label':'太子',  'emoji':'🤴', 'role':'太子',     'rank':'储君'},
     {'id':'taizi',   'label':'太子',  'emoji':'🤴', 'role':'太子',     'rank':'储君'},
     {'id':'zhongshu','label':'中书省','emoji':'📜', 'role':'中书令',   'rank':'正一品'},
     {'id':'menxia',  'label':'门下省','emoji':'🔍', 'role':'侍中',     'rank':'正一品'},
@@ -437,8 +447,6 @@ def _get_agent_session_status(agent_id):
     返回: (last_active_ts_ms, session_count, is_busy)
     """
     sessions_file = OCLAW_HOME / 'agents' / agent_id / 'sessions' / 'sessions.json'
-    if not sessions_file.exists() and agent_id == 'taizi':
-        sessions_file = OCLAW_HOME / 'agents' / 'main' / 'sessions' / 'sessions.json'
     if not sessions_file.exists():
         return 0, 0, False
     try:
@@ -572,19 +580,28 @@ def wake_agent(agent_id, message=''):
     if not _check_gateway_alive():
         return {'ok': False, 'error': 'Gateway 未启动，请先运行 openclaw gateway start'}
 
-    # 确定实际 agent id（taizi 用 main）
-    runtime_id = 'main' if agent_id == 'taizi' else agent_id
+    # agent_id 直接作为 runtime_id（openclaw agents list 中的注册名）
+    runtime_id = agent_id
     msg = message or f'🔔 系统心跳检测 — 请回复 OK 确认在线。当前时间: {now_iso()}'
 
     def do_wake():
         try:
             cmd = ['openclaw', 'agent', '--agent', runtime_id, '-m', msg, '--timeout', '120']
-            log.info(f'🔔 唤醒 {agent_id} ({runtime_id})...')
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=130)
-            if result.returncode == 0:
-                log.info(f'✅ {agent_id} 已唤醒')
-            else:
-                log.warning(f'⚠️ {agent_id} 唤醒失败: {result.stderr[:200]}')
+            log.info(f'🔔 唤醒 {agent_id}...')
+            # 带重试（最多2次）
+            for attempt in range(1, 3):
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=130)
+                if result.returncode == 0:
+                    log.info(f'✅ {agent_id} 已唤醒')
+                    return
+                err_msg = result.stderr[:200] if result.stderr else result.stdout[:200]
+                log.warning(f'⚠️ {agent_id} 唤醒失败(第{attempt}次): {err_msg}')
+                if attempt < 2:
+                    import time
+                    time.sleep(5)
+            log.error(f'❌ {agent_id} 唤醒最终失败')
+        except subprocess.TimeoutExpired:
+            log.error(f'❌ {agent_id} 唤醒超时(130s)')
         except Exception as e:
             log.warning(f'⚠️ {agent_id} 唤醒异常: {e}')
     threading.Thread(target=do_wake, daemon=True).start()
@@ -596,7 +613,7 @@ def wake_agent(agent_id, message=''):
 
 # 状态 → agent_id 映射
 _STATE_AGENT_MAP = {
-    'Taizi': 'main',      # 太子用 main agent
+    'Taizi': 'taizi',
     'Zhongshu': 'zhongshu',
     'Menxia': 'menxia',
     'Assigned': 'shangshu',
