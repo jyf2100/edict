@@ -32,13 +32,13 @@
 - [x] **2.5** 创建 `scripts/event_publisher.py` 并修改 `scripts/refresh_live_data.py` 发布事件到 Redis ✅
 - [x] **2.6** 测试实时同步 ✅ (端到端测试通过)
 
-### Phase 3: 反向控制通道 (1.5 天)
+### Phase 3: 反向控制通道 (1.5 天) ✅ 完成
 
 - [x] **3.1** 创建 `edict/backend/app/services/task_control.py` (已存在)
 - [x] **3.2** 增强 `dashboard/server.py` 的 task-action API (已存在)
 - [x] **3.3** 创建 `scripts/openclaw_control_listener.py` ✅
-- [ ] **3.4** 更新 Agent SOUL.md 添加中断检查点
-- [ ] **3.5** 测试控制指令 (需要 Redis 运行)
+- [x] **3.4** 更新 Agent SOUL.md 添加中断检查点 ✅ (11个 Agent)
+- [x] **3.5** 测试控制指令 ✅ (Redis 端到端测试通过)
 
 ### Phase 4: 集成测试 (1 天)
 
@@ -104,8 +104,10 @@ cd edict/backend && uvicorn app.main:app --port 8000
 | scripts/event_publisher.py | ✅ 已创建 | 2.5 |
 | scripts/refresh_live_data.py | ✅ 已修改 | 2.5 |
 | scripts/openclaw_control_listener.py | ✅ 已创建 | 3.3 |
-| agents/*/SOUL.md | 待修改 | 3.4 |
+| scripts/check_interrupt.py | ✅ 已创建 | 3.4 |
+| agents/*/SOUL.md | ✅ 已修改 (11个) | 3.4 |
 | scripts/test_ws_server.py | ✅ 已创建 | 测试工具 |
+| scripts/test_e2e_websocket.py | ✅ 已创建 | 测试工具 |
 
 ---
 
@@ -116,11 +118,12 @@ cd edict/backend && uvicorn app.main:app --port 8000
 - ✅ 同步脚本事件发布器已创建
 - ✅ 端到端测试通过 (Redis + WebSocket)
 
-**Phase 3 进行中**: 反向控制通道
-- ✅ 控制监听器已创建
-- ⏳ Agent 中断检查点 (待 Agent SOUL.md 更新)
+**Phase 3 完成**: 反向控制通道 ✅
+- ✅ 控制监听器已创建 (`scripts/openclaw_control_listener.py`)
+- ✅ 中断检查工具已创建 (`scripts/check_interrupt.py`)
+- ✅ 11 个 Agent SOUL.md 已添加中断检查点
 
-**下一步**:
-1. 更新 Agent SOUL.md 添加中断检查点
-2. 完成集成测试
-3. 更新文档
+**Phase 4 待完成**: 集成测试
+- ⏳ 编写单元测试
+- ⏳ 端到端测试
+- ⏳ 文档更新
