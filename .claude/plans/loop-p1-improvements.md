@@ -26,14 +26,15 @@
 - [x] **1.4** 创建 `data/hooks_config.json` - 钩子配置文件
 - [x] **1.5** 测试自动上报 (12 tests passing)
 
-### Phase 2: 动态权限矩阵 (3 天)
+### Phase 2: 动态权限矩阵 (3 天) ✅ 完成
 
-- [ ] **2.1** 创建 `edict/backend/app/services/auth_matrix.py` - 权限服务
-- [ ] **2.2** 添加 `GET /api/auth-matrix` - 获取权限矩阵
-- [ ] **2.3** 添加 `POST /api/auth-matrix/grant` - 动态授权
-- [ ] **2.4** 添加 `POST /api/auth-matrix/revoke` - 动态撤销
-- [ ] **2.5** 更新前端权限管理界面
-- [ ] **2.6** 测试动态权限
+- [x] **2.1** 创建 `edict/backend/app/services/auth_matrix.py` - 权限服务
+- [x] **2.2** 添加 `GET /api/auth-matrix` - 获取权限矩阵
+- [x] **2.3** 添加 `POST /api/auth-matrix/grant` - 动态授权
+- [x] **2.4** 添加 `POST /api/auth-matrix/revoke` - 动态撤销
+- [x] **2.5** 添加 `GET /api/auth-matrix/audit` - 审计日志
+- [x] **2.6** 添加 `GET /api/auth-matrix/matrix/visual` - 可视化矩阵
+- [x] **2.7** 测试动态权限 (11 tests passing)
 
 ### Phase 3: 链路追踪 (2 天)
 
@@ -79,17 +80,21 @@
 | scripts/hooks/__init__.py | ✅ 已创建 | 1.1-1.3 |
 | data/hooks_config.json | ✅ 已创建 | 1.4 |
 | tests/test_hooks.py | ✅ 已创建 | 1.5 |
+| edict/backend/app/services/auth_matrix.py | ✅ 已创建 | 2.1 |
+| edict/backend/app/api/auth_matrix.py | ✅ 已创建 | 2.2-2.6 |
+| edict/backend/app/main.py | ✅ 已修改 | 2.2 |
+| tests/test_auth_matrix.py | ✅ 已创建 | 2.7 |
 
 ---
 
 ## 当前状态
 
-**✅ Phase 1 已完成！**
+**✅ Phase 1-2 已完成！**
 
 | Phase | 状态 | 产物 |
 |-------|------|------|
 | Phase 1 | ✅ | 自动上报钩子 (12 tests) |
-| Phase 2 | ⏳ | 待开始 |
+| Phase 2 | ✅ | 动态权限矩阵 (11 tests) |
 | Phase 3 | ⏳ | 待开始 |
 | Phase 4 | ⏳ | 待开始 |
 
@@ -97,18 +102,16 @@
 
 ```
 tests/test_hooks.py ............ 12 tests ✅
-- TestReportToolCallScript: 3 tests
-- TestReportThinkingScript: 2 tests
-- TestReportStateScript: 2 tests
-- TestHookConfig: 2 tests
-- TestHookFunctions: 3 tests
+tests/test_auth_matrix.py ...... 11 tests ✅
+- TestAuthMatrixService: 9 tests
+- TestDefaultPermissions: 2 tests
 ```
 
 ### 下一步
 
-1. 开始 Phase 2: 动态权限矩阵
-2. 创建 auth_matrix.py 服务
-3. 添加 API 端点
+1. 开始 Phase 3: 链路追踪
+2. 创建 tracing.py 服务
+3. 在 sessions_send 中注入 trace context
 
 ---
 
