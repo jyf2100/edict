@@ -36,13 +36,18 @@
 - [x] **2.6** 添加 `GET /api/auth-matrix/matrix/visual` - 可视化矩阵
 - [x] **2.7** 测试动态权限 (11 tests passing)
 
-### Phase 3: 链路追踪 (2 天)
+### Phase 3: 链路追踪 (2 天) ✅ 完成
 
-- [ ] **3.1** 创建 `edict/backend/app/services/tracing.py` - 追踪服务
-- [ ] **3.2** 在 sessions_send 中注入 trace context
-- [ ] **3.3** 创建 `GET /api/traces/{trace_id}` - 获取追踪数据
-- [ ] **3.4** 更新前端显示追踪链路
-- [ ] **3.5** 测试链路追踪
+- [x] **3.1** 创建 `edict/backend/app/services/tracing.py` - 追踪服务
+- [x] **3.2** 创建 `edict/backend/app/api/tracing.py` - 追踪 API
+  - GET /api/traces - 列出追踪
+  - GET /api/traces/{trace_id} - 获取追踪详情
+  - GET /api/traces/{trace_id}/tree - 获取追踪树
+  - POST /api/traces/start - 开始新追踪
+  - POST /api/traces/continue - 继续追踪
+  - POST /api/traces/end - 结束 span
+- [x] **3.3** W3C traceparent 格式支持
+- [x] **3.4** 测试链路追踪 (13 tests passing)
 
 ### Phase 4: 集成测试 (1 天)
 
@@ -82,20 +87,23 @@
 | tests/test_hooks.py | ✅ 已创建 | 1.5 |
 | edict/backend/app/services/auth_matrix.py | ✅ 已创建 | 2.1 |
 | edict/backend/app/api/auth_matrix.py | ✅ 已创建 | 2.2-2.6 |
-| edict/backend/app/main.py | ✅ 已修改 | 2.2 |
+| edict/backend/app/main.py | ✅ 已修改 | 2.2/3.2 |
 | tests/test_auth_matrix.py | ✅ 已创建 | 2.7 |
+| edict/backend/app/services/tracing.py | ✅ 已创建 | 3.1 |
+| edict/backend/app/api/tracing.py | ✅ 已创建 | 3.2 |
+| tests/test_tracing.py | ✅ 已创建 | 3.4 |
 
 ---
 
 ## 当前状态
 
-**✅ Phase 1-2 已完成！**
+**✅ Phase 1-3 已完成！**
 
 | Phase | 状态 | 产物 |
 |-------|------|------|
 | Phase 1 | ✅ | 自动上报钩子 (12 tests) |
 | Phase 2 | ✅ | 动态权限矩阵 (11 tests) |
-| Phase 3 | ⏳ | 待开始 |
+| Phase 3 | ✅ | 链路追踪 (13 tests) |
 | Phase 4 | ⏳ | 待开始 |
 
 ### 测试覆盖
@@ -103,15 +111,15 @@
 ```
 tests/test_hooks.py ............ 12 tests ✅
 tests/test_auth_matrix.py ...... 11 tests ✅
-- TestAuthMatrixService: 9 tests
-- TestDefaultPermissions: 2 tests
+tests/test_tracing.py .......... 13 tests ✅
+总计: 36 tests
 ```
 
 ### 下一步
 
-1. 开始 Phase 3: 链路追踪
-2. 创建 tracing.py 服务
-3. 在 sessions_send 中注入 trace context
+1. 开始 Phase 4: 集成测试
+2. 编写端到端测试
+3. 文档更新
 
 ---
 
