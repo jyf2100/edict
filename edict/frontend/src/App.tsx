@@ -15,6 +15,7 @@ import Toaster from './components/Toaster';
 import CourtCeremony from './components/CourtCeremony';
 import { ConnectionStatusBar } from './components/ConnectionStatus';
 import { PermissionMatrix } from './components/PermissionMatrix';
+import { TraceViewer } from './components/TraceViewer';
 
 export default function App() {
   const activeTab = useStore((s) => s.activeTab);
@@ -89,6 +90,7 @@ export default function App() {
       {activeTab === 'models' && <ModelConfig />}
       {activeTab === 'skills' && <SkillsConfig />}
       {activeTab === 'permissions' && <PermissionMatrix />}
+      {activeTab === 'traces' && <TraceViewer />}
       {activeTab === 'sessions' && <SessionsPanel />}
       {activeTab === 'memorials' && <MemorialPanel />}
       {activeTab === 'templates' && <TemplatePanel />}

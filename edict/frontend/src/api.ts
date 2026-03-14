@@ -283,6 +283,14 @@ export const api = {
     }),
   auditLog: (limit = 100) =>
     fetchJ<AuditLogData>(`${API_BASE}/api/auth-matrix/audit?limit=${limit}`),
+
+  // Tracing
+  listTraces: (limit = 100) =>
+    fetchJ<TraceListData>(`${API_BASE}/api/traces?limit=${limit}`),
+  getTrace: (traceId: string) =>
+    fetchJ<TraceDetailData>(`${API_BASE}/api/traces/${encodeURIComponent(traceId)}`),
+  getTraceTree: (traceId: string) =>
+    fetchJ<TraceTreeData>(`${API_BASE}/api/traces/${encodeURIComponent(traceId)}/tree`),
 };
 
 // ── Types ──
@@ -631,4 +639,50 @@ export interface PermissionActionResult {
   granted?: boolean;
   revoked?: boolean;
   message: string;
+}
+
+// ── Tracing Types ──
+
+export interface TraceSpan {
+  span_id: string;
+  trace_id: string;
+  parent_span_id: string | null;
+  name: string;
+  kind: string;
+  start_time: string;
+  end_time: string | null;
+  duration_ms: number | null;
+  status: string;
+  attributes: Record<string, unknown>;
+  events: { name: string; timestamp: string; attributes?: Record<string, unknown> }[];
+}
+
+export interface TraceSummary {
+  trace_id: string;
+  root_span_name: string;
+  span_count: number;
+  duration_ms: number | null;
+  status: string;
+  start_time: string;
+}
+
+export interface TraceListData {
+  count: number;
+  traces: TraceSummary[];
+}
+
+export interface TraceDetailData {
+  trace_id: string;
+  span_count: number;
+  spans: TraceSpan[];
+}
+
+export interface TraceTreeNode {
+  span: TraceSpan;
+  children: TraceTreeNode[];
+}
+
+export interface TraceTreeData {
+  trace_id: string;
+  spans: TraceTreeNode[];
 }

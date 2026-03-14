@@ -90,7 +90,7 @@ export function getPipeStatus(t: Task): PipeStatus[] {
 
 export type TabKey =
   | 'edicts' | 'monitor' | 'officials' | 'models'
-  | 'skills' | 'sessions' | 'memorials' | 'templates' | 'morning' | 'permissions';
+  | 'skills' | 'sessions' | 'memorials' | 'templates' | 'morning' | 'permissions' | 'traces';
 
 export const TAB_DEFS: { key: TabKey; label: string; icon: string }[] = [
   { key: 'edicts',    label: '旨意看板', icon: '📜' },
@@ -99,6 +99,7 @@ export const TAB_DEFS: { key: TabKey; label: string; icon: string }[] = [
   { key: 'models',    label: '模型配置', icon: '🤖' },
   { key: 'skills',    label: '技能配置', icon: '🎯' },
   { key: 'permissions', label: '权限管理', icon: '🔐' },
+  { key: 'traces',    label: '追踪日志', icon: '🔗' },
   { key: 'sessions',  label: '小任务',   icon: '💬' },
   { key: 'memorials', label: '奏折阁',   icon: '📜' },
   { key: 'templates', label: '旨库',     icon: '📋' },
