@@ -14,6 +14,7 @@ import TaskModal from './components/TaskModal';
 import Toaster from './components/Toaster';
 import CourtCeremony from './components/CourtCeremony';
 import { ConnectionStatusBar } from './components/ConnectionStatus';
+import { PermissionMatrix } from './components/PermissionMatrix';
 
 export default function App() {
   const activeTab = useStore((s) => s.activeTab);
@@ -87,6 +88,7 @@ export default function App() {
       {activeTab === 'officials' && <OfficialPanel />}
       {activeTab === 'models' && <ModelConfig />}
       {activeTab === 'skills' && <SkillsConfig />}
+      {activeTab === 'permissions' && <PermissionMatrix />}
       {activeTab === 'sessions' && <SessionsPanel />}
       {activeTab === 'memorials' && <MemorialPanel />}
       {activeTab === 'templates' && <TemplatePanel />}

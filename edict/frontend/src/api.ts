@@ -261,6 +261,28 @@ export const api = {
 
   createTask: (data: CreateTaskPayload) =>
     postJ<ActionResult & { taskId?: string }>(`${API_BASE}/api/create-task`, data),
+
+  // Permission Matrix
+  permissionMatrix: () =>
+    fetchJ<PermissionMatrixData>(`${API_BASE}/api/auth-matrix`),
+  visualMatrix: () =>
+    fetchJ<VisualMatrixData>(`${API_BASE}/api/auth-matrix/matrix/visual`),
+  grantPermission: (fromAgent: string, toAgent: string, reason?: string, operator?: string) =>
+    postJ<PermissionActionResult>(`${API_BASE}/api/auth-matrix/grant`, {
+      from_agent: fromAgent,
+      to_agent: toAgent,
+      reason,
+      operator,
+    }),
+  revokePermission: (fromAgent: string, toAgent: string, reason?: string, operator?: string) =>
+    postJ<PermissionActionResult>(`${API_BASE}/api/auth-matrix/revoke`, {
+      from_agent: fromAgent,
+      to_agent: toAgent,
+      reason,
+      operator,
+    }),
+  auditLog: (limit = 100) =>
+    fetchJ<AuditLogData>(`${API_BASE}/api/auth-matrix/audit?limit=${limit}`),
 };
 
 // ── Types ──
@@ -563,4 +585,50 @@ export interface RemoteSkillsListResult {
   count?: number;
   listedAt?: string;
   error?: string;
+}
+
+// ── Permission Matrix Types ──
+
+export interface PermissionMatrixMeta {
+  name: string;
+  role?: string;
+  emoji?: string;
+}
+
+export interface PermissionMatrixData {
+  permissions: Record<string, { allow: string[]; deny: string[] }>;
+  meta: Record<string, PermissionMatrixMeta>;
+  last_updated?: string;
+}
+
+export interface VisualMatrixRow {
+  from: string;
+  from_name: string;
+  [to_agent: string]: string;
+}
+
+export interface VisualMatrixData {
+  agents: { id: string; name: string }[];
+  matrix: VisualMatrixRow[];
+}
+
+export interface AuditLogEntry {
+  timestamp: string;
+  action: 'grant' | 'revoke';
+  from_agent: string;
+  to_agent: string;
+  reason?: string;
+  operator?: string;
+}
+
+export interface AuditLogData {
+  count: number;
+  entries: AuditLogEntry[];
+}
+
+export interface PermissionActionResult {
+  success: boolean;
+  granted?: boolean;
+  revoked?: boolean;
+  message: string;
 }
