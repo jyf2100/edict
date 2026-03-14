@@ -3,7 +3,17 @@
 
 既可以 pytest 运行，也可以 python3 直接运行。
 """
-import sys, os, json, pathlib, pytest
+import sys, os, json, pathlib, unittest
+try:
+    import pytest
+    HAS_PYTEST = True
+except ImportError:
+    pytest = None
+    HAS_PYTEST = False
+
+if not HAS_PYTEST:
+    # 跳过整个模块如果 pytest 不可用
+    raise unittest.SkipTest("pytest not installed, skipping")
 
 # 切换到 scripts 目录（file_lock 依赖）
 _SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), '..', 'scripts')
