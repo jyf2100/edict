@@ -10,6 +10,6 @@ services:
       - DEMO_MODE=true
     restart: unless-stopped
 
-# 启动: docker compose up
-# 如果在 ARM Mac (M1/M2/M3) 上运行，删除 platform 行即可
-# 访问: http://localhost:7891
+networks:
+  edict-net:
+    driver: bridge

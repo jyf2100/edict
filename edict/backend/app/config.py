@@ -1,5 +1,6 @@
 """Edict 配置管理 — 从环境变量加载所有配置。"""
 
+from typing import Optional
 from pydantic_settings import BaseSettings
 from functools import lru_cache
 
@@ -11,7 +12,7 @@ class Settings(BaseSettings):
     postgres_db: str = "edict"
     postgres_user: str = "edict"
     postgres_password: str = "edict_secret_change_me"
-    database_url_override: str | None = None  # 直接设置 DATABASE_URL 环境变量时用
+    database_url_override: Optional[str] = None  # 直接设置 DATABASE_URL 环境变量时用
 
     # ── Redis ──
     redis_url: str = "redis://localhost:6379/0"
@@ -26,7 +27,7 @@ class Settings(BaseSettings):
     # ── OpenClaw ──
     openclaw_gateway_url: str = "http://localhost:18789"
     openclaw_bin: str = "openclaw"
-    openclaw_project_dir: str | None = None
+    openclaw_project_dir: Optional[str] = None
 
     # ── Legacy 兼容 ──
     legacy_data_dir: str = "../data"
