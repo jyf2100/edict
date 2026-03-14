@@ -7,6 +7,32 @@
 const API_BASE = import.meta.env.VITE_API_URL || '';
 const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws';
 
+// ── 连接状态枚举 ──
+
+export enum ConnectionStatus {
+  CONNECTED = 'connected',
+  CONNECTING = 'connecting',
+  DISCONNECTED = 'disconnected',
+  RECONNECTING = 'reconnecting',
+}
+
+// ── 重连策略常量 ──
+
+const WS_MAX_RETRIES = 5;
+const WS_BASE_DELAY = 2000; // 2 秒
+const WS_MAX_DELAY = 32000; // 32 秒
+
+/**
+ * 计算指数退避延迟
+ * @param retryCount 当前重试次数 (从 0 开始)
+ * @returns 延迟毫秒数
+ */
+export function calculateReconnectDelay(retryCount: number): number {
+  // 2^(retryCount + 1) * BASE_DELAY, 上限为 MAX_DELAY
+  const delay = Math.pow(2, retryCount + 1) * (WS_BASE_DELAY / 2);
+  return Math.min(delay, WS_MAX_DELAY);
+}
+
 // ── WebSocket 事件类型 ──
 
 export interface WSEvent {
@@ -32,19 +58,57 @@ let _ws: WebSocket | null = null;
 let _wsHandlers: Set<WSEventHandler> = new Set();
 let _wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
 let _wsConnected = false;
+let _wsRetryCount = 0;
+
+/**
+ * 获取当前重试次数
+ */
+export function getWSRetryCount(): number {
+  return _wsRetryCount;
+}
+
+/**
+ * 重置重试计数器
+ */
+export function resetWSRetryCount(): void {
+  _wsRetryCount = 0;
+}
 
 export function isWSConnected(): boolean {
   return _wsConnected && _ws?.readyState === WebSocket.OPEN;
 }
 
+/**
+ * 获取当前连接状态
+ */
+export function getWSStatus(): ConnectionStatus {
+  if (_wsConnected && _ws?.readyState === WebSocket.OPEN) {
+    return ConnectionStatus.CONNECTED;
+  }
+  if (_ws?.readyState === WebSocket.CONNECTING) {
+    return ConnectionStatus.CONNECTING;
+  }
+  if (_wsRetryCount > 0) {
+    return ConnectionStatus.RECONNECTING;
+  }
+  return ConnectionStatus.DISCONNECTED;
+}
+
 export function connectWS(onConnect?: () => void): void {
   if (_ws) return;
+
+  // 检查是否超过最大重试次数
+  if (_wsRetryCount >= WS_MAX_RETRIES) {
+    console.warn('[WS] Max retries reached, giving up');
+    return;
+  }
 
   try {
     _ws = new WebSocket(WS_URL);
 
     _ws.onopen = () => {
       _wsConnected = true;
+      _wsRetryCount = 0; // 重置重试计数器
       console.log('[WS] Connected to', WS_URL);
       // 发送心跳订阅
       _ws?.send(JSON.stringify({ type: 'subscribe', topics: ['*'] }));
@@ -63,13 +127,18 @@ export function connectWS(onConnect?: () => void): void {
     _ws.onclose = () => {
       _wsConnected = false;
       console.log('[WS] Disconnected');
-      // 自动重连 (5秒后)
-      if (!_wsReconnectTimer) {
+
+      // 自动重连 (指数退避)
+      if (!_wsReconnectTimer && _wsRetryCount < WS_MAX_RETRIES) {
+        const delay = calculateReconnectDelay(_wsRetryCount);
+        _wsRetryCount++;
+        console.log(`[WS] Reconnecting in ${delay}ms (attempt ${_wsRetryCount}/${WS_MAX_RETRIES})`);
+
         _wsReconnectTimer = setTimeout(() => {
           _wsReconnectTimer = null;
           _ws = null;
-          connectWS();
-        }, 5000);
+          connectWS(onConnect);
+        }, delay);
       }
     };
 
@@ -90,6 +159,7 @@ export function disconnectWS(): void {
   _ws?.close();
   _ws = null;
   _wsConnected = false;
+  _wsRetryCount = 0; // 重置重试计数器
 }
 
 export function subscribeWS(handler: WSEventHandler): () => void {

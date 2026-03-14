@@ -18,7 +18,9 @@ import {
   disconnectWS,
   subscribeWS,
   isWSConnected,
+  getWSStatus,
   type WSEvent,
+  type ConnectionStatus as WSConnectionStatus,
 } from './api';
 
 // ── Pipeline Definition (PIPE) ──
@@ -253,6 +255,9 @@ export const TPL_CATS = [
 
 // ── Main Store ──
 
+// Re-export ConnectionStatus for components
+export type ConnectionStatus = WSConnectionStatus;
+
 interface AppStore {
   // Data
   liveStatus: LiveStatus | null;
@@ -262,6 +267,9 @@ interface AppStore {
   agentsStatusData: AgentsStatusData | null;
   morningBrief: MorningBrief | null;
   subConfig: SubConfig | null;
+
+  // Connection State
+  wsStatus: ConnectionStatus;
 
   // UI State
   activeTab: TabKey;
@@ -284,6 +292,7 @@ interface AppStore {
   setModalTaskId: (id: string | null) => void;
   setCountdown: (n: number) => void;
   toast: (msg: string, type?: 'ok' | 'err') => void;
+  setWSStatus: (status: ConnectionStatus) => void;
 
   // Data fetching
   loadLive: () => Promise<void>;
@@ -305,6 +314,8 @@ export const useStore = create<AppStore>((set, get) => ({
   agentsStatusData: null,
   morningBrief: null,
   subConfig: null,
+
+  wsStatus: 'disconnected' as ConnectionStatus,
 
   activeTab: 'edicts',
   edictFilter: 'active',
@@ -338,6 +349,8 @@ export const useStore = create<AppStore>((set, get) => ({
       set((s) => ({ toasts: s.toasts.filter((t) => t.id !== id) }));
     }, 3000);
   },
+
+  setWSStatus: (status) => set({ wsStatus: status }),
 
   loadLive: async () => {
     try {
@@ -436,9 +449,13 @@ export function startPolling() {
   // 初始加载
   useStore.getState().loadAll();
 
+  // 初始连接状态
+  useStore.getState().setWSStatus(getWSStatus());
+
   // 尝试连接 WebSocket
   connectWS(() => {
     console.log('[Store] WebSocket connected, reducing polling interval');
+    useStore.getState().setWSStatus(getWSStatus());
     // WebSocket 连接成功后，延长轮询间隔作为备份
     // 但仍保留轮询作为降级方案
   });
@@ -451,6 +468,12 @@ export function startPolling() {
     const s = useStore.getState();
     const cd = s.countdown - 1;
     const interval = isWSConnected() ? 30 : 5;
+
+    // 更新连接状态
+    const currentStatus = getWSStatus();
+    if (currentStatus !== s.wsStatus) {
+      s.setWSStatus(currentStatus);
+    }
 
     if (cd <= 0) {
       s.setCountdown(interval);

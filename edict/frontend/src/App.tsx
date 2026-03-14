@@ -13,6 +13,7 @@ import TaskModal from './components/TaskModal';
 // ConfirmDialog is used inside TaskModal as needed
 import Toaster from './components/Toaster';
 import CourtCeremony from './components/CourtCeremony';
+import { ConnectionStatusBar } from './components/ConnectionStatus';
 
 export default function App() {
   const activeTab = useStore((s) => s.activeTab);
@@ -54,6 +55,7 @@ export default function App() {
           <div className="sub-text">OpenClaw Sansheng-Liubu Dashboard</div>
         </div>
         <div className="hdr-r">
+          <ConnectionStatusBar />
           <span className={`chip ${syncOk ? 'ok' : syncOk === false ? 'err' : ''}`}>
             {syncOk ? '✅ 同步正常' : syncOk === false ? '❌ 服务器未启动' : '⏳ 连接中…'}
           </span>
