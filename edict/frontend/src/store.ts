@@ -1,6 +1,6 @@
 /**
  * Zustand Store — 三省六部看板状态管理
- * HTTP 5s 轮询，无 WebSocket
+ * 支持 WebSocket 实时推送 + HTTP 轮询降级
  */
 
 import { create } from 'zustand';
@@ -14,6 +14,11 @@ import {
   type MorningBrief,
   type SubConfig,
   type ChangeLogEntry,
+  connectWS,
+  disconnectWS,
+  subscribeWS,
+  isWSConnected,
+  type WSEvent,
 } from './api';
 
 // ── Pipeline Definition (PIPE) ──
@@ -402,18 +407,53 @@ export const useStore = create<AppStore>((set, get) => ({
   },
 }));
 
-// ── Countdown & Polling ──
+// ── Countdown & Polling & WebSocket ──
 
 let _cdTimer: ReturnType<typeof setInterval> | null = null;
+let _wsUnsubscribe: (() => void) | null = null;
+
+function _handleWSEvent(event: WSEvent) {
+  // 收到任何事件都刷新数据
+  if (event.type === 'event' && event.topic) {
+    console.log('[Store] WS event:', event.topic);
+    // 根据事件类型决定刷新哪些数据
+    const s = useStore.getState();
+    if (event.topic.includes('task') || event.topic.includes('status')) {
+      s.loadLive();
+    }
+    if (event.topic.includes('agent') || event.topic.includes('model')) {
+      s.loadAgentConfig();
+    }
+    if (event.topic.includes('official')) {
+      s.loadOfficials();
+    }
+  }
+}
 
 export function startPolling() {
   if (_cdTimer) return;
+
+  // 初始加载
   useStore.getState().loadAll();
+
+  // 尝试连接 WebSocket
+  connectWS(() => {
+    console.log('[Store] WebSocket connected, reducing polling interval');
+    // WebSocket 连接成功后，延长轮询间隔作为备份
+    // 但仍保留轮询作为降级方案
+  });
+
+  // 订阅 WebSocket 事件
+  _wsUnsubscribe = subscribeWS(_handleWSEvent);
+
+  // 轮询间隔：WebSocket 连接时 30 秒，未连接时 5 秒
   _cdTimer = setInterval(() => {
     const s = useStore.getState();
     const cd = s.countdown - 1;
+    const interval = isWSConnected() ? 30 : 5;
+
     if (cd <= 0) {
-      s.setCountdown(5);
+      s.setCountdown(interval);
       s.loadAll();
     } else {
       s.setCountdown(cd);
@@ -426,6 +466,11 @@ export function stopPolling() {
     clearInterval(_cdTimer);
     _cdTimer = null;
   }
+  if (_wsUnsubscribe) {
+    _wsUnsubscribe();
+    _wsUnsubscribe = null;
+  }
+  disconnectWS();
 }
 
 // ── Utility ──

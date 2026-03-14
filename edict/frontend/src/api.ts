@@ -1,9 +1,107 @@
 /**
  * API 层 — 对接 dashboard/server.py
  * 生产环境从同源 (port 7891) 请求，开发环境可通过 VITE_API_URL 指定
+ * WebSocket 连接到 FastAPI 后端 (port 8000) 用于实时推送
  */
 
 const API_BASE = import.meta.env.VITE_API_URL || '';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://127.0.0.1:8000/ws';
+
+// ── WebSocket 事件类型 ──
+
+export interface WSEvent {
+  type: 'event' | 'pong' | 'subscribed';
+  topic?: string;
+  data?: WSEventData;
+  topics?: string[];
+}
+
+export interface WSEventData {
+  event_type?: string;
+  task_id?: string;
+  agent_id?: string;
+  payload?: unknown;
+  timestamp?: string;
+}
+
+export type WSEventHandler = (event: WSEvent) => void;
+
+// ── WebSocket 连接管理 ──
+
+let _ws: WebSocket | null = null;
+let _wsHandlers: Set<WSEventHandler> = new Set();
+let _wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let _wsConnected = false;
+
+export function isWSConnected(): boolean {
+  return _wsConnected && _ws?.readyState === WebSocket.OPEN;
+}
+
+export function connectWS(onConnect?: () => void): void {
+  if (_ws) return;
+
+  try {
+    _ws = new WebSocket(WS_URL);
+
+    _ws.onopen = () => {
+      _wsConnected = true;
+      console.log('[WS] Connected to', WS_URL);
+      // 发送心跳订阅
+      _ws?.send(JSON.stringify({ type: 'subscribe', topics: ['*'] }));
+      onConnect?.();
+    };
+
+    _ws.onmessage = (e) => {
+      try {
+        const event: WSEvent = JSON.parse(e.data);
+        _wsHandlers.forEach((h) => h(event));
+      } catch (err) {
+        console.warn('[WS] Failed to parse message:', err);
+      }
+    };
+
+    _ws.onclose = () => {
+      _wsConnected = false;
+      console.log('[WS] Disconnected');
+      // 自动重连 (5秒后)
+      if (!_wsReconnectTimer) {
+        _wsReconnectTimer = setTimeout(() => {
+          _wsReconnectTimer = null;
+          _ws = null;
+          connectWS();
+        }, 5000);
+      }
+    };
+
+    _ws.onerror = (err) => {
+      console.warn('[WS] Error:', err);
+      _ws?.close();
+    };
+  } catch (err) {
+    console.warn('[WS] Failed to connect:', err);
+  }
+}
+
+export function disconnectWS(): void {
+  if (_wsReconnectTimer) {
+    clearTimeout(_wsReconnectTimer);
+    _wsReconnectTimer = null;
+  }
+  _ws?.close();
+  _ws = null;
+  _wsConnected = false;
+}
+
+export function subscribeWS(handler: WSEventHandler): () => void {
+  _wsHandlers.add(handler);
+  return () => _wsHandlers.delete(handler);
+}
+
+export function sendWS(data: unknown): void {
+  if (_ws?.readyState === WebSocket.OPEN) {
+    _ws.send(JSON.stringify(data));
+  }
+}
 
 // ── 通用请求 ──
 

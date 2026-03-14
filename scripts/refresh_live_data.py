@@ -1,7 +1,16 @@
 #!/usr/bin/env python3
-import json, pathlib, datetime, logging
+import json, pathlib, datetime, logging, time
 from file_lock import atomic_json_write, atomic_json_read
 from utils import read_json
+
+# 导入事件发布器（可选，如果 Redis 不可用则静默失败）
+try:
+    from event_publisher import publish_sync_complete, publish_event
+    _has_event_publisher = True
+except ImportError:
+    _has_event_publisher = False
+    def publish_sync_complete(*args, **kwargs): pass
+    def publish_event(*args, **kwargs): pass
 
 log = logging.getLogger('refresh')
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [%(name)s] %(message)s', datefmt='%H:%M:%S')
@@ -19,6 +28,8 @@ def output_meta(path):
 
 
 def main():
+    start_time = time.time()
+
     # 使用 officials_stats.json（与 sync_officials_stats.py 统一）
     officials_data = read_json(DATA / 'officials_stats.json', {})
     officials = officials_data.get('officials', []) if isinstance(officials_data, dict) else officials_data
@@ -115,7 +126,17 @@ def main():
     }
 
     atomic_json_write(DATA / 'live_status.json', payload)
-    log.info(f'updated live_status.json ({len(tasks)} tasks)')
+    duration_ms = int((time.time() - start_time) * 1000)
+    log.info(f'updated live_status.json ({len(tasks)} tasks) in {duration_ms}ms')
+
+    # 发布同步完成事件到 Redis（触发 WebSocket 推送）
+    publish_sync_complete(
+        record_count=len(tasks),
+        duration_ms=duration_ms,
+        officials_count=len(officials),
+        today_done=today_done,
+        in_progress=in_progress,
+    )
 
 
 if __name__ == '__main__':
