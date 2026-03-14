@@ -23,14 +23,14 @@
 - [x] **1.2** 更新 edict/backend/requirements.txt (已存在)
 - [x] **1.3** 测试 Redis 连接
 
-### Phase 2: WebSocket 实时推送 (2 天)
+### Phase 2: WebSocket 实时推送 (2 天) ✅ 完成
 
 - [x] **2.1** 创建 `edict/backend/app/api/websocket.py` (已存在)
 - [x] **2.2** 创建 `edict/backend/app/services/event_publisher.py` (已存在 event_bus.py)
 - [x] **2.3** 修改 `edict/frontend/src/api.ts` 添加 WebSocket ✅
 - [x] **2.4** 修改 `edict/frontend/src/store.ts` 接收实时更新 ✅
 - [x] **2.5** 创建 `scripts/event_publisher.py` 并修改 `scripts/refresh_live_data.py` 发布事件到 Redis ✅
-- [ ] **2.6** 测试实时同步 (需要 Redis 运行)
+- [x] **2.6** 测试实时同步 ✅ (端到端测试通过)
 
 ### Phase 3: 反向控制通道 (1.5 天)
 
@@ -111,12 +111,16 @@ cd edict/backend && uvicorn app.main:app --port 8000
 
 ## 当前状态
 
-**Phase 2 基本完成**: WebSocket 实时推送基础设施已就绪
+**Phase 2 完成**: WebSocket 实时推送 ✅
 - ✅ 前端 WebSocket 客户端已实现
 - ✅ 同步脚本事件发布器已创建
-- ⏳ 待测试：需要启动 Redis + FastAPI 后端
+- ✅ 端到端测试通过 (Redis + WebSocket)
+
+**Phase 3 进行中**: 反向控制通道
+- ✅ 控制监听器已创建
+- ⏳ Agent 中断检查点 (待 Agent SOUL.md 更新)
 
 **下一步**:
-1. 启动 Redis (`brew install redis && brew services start redis`)
-2. 启动 FastAPI 后端 (`cd edict/backend && uvicorn app.main:app --port 8000`)
-3. 测试 WebSocket 连接和实时推送
+1. 更新 Agent SOUL.md 添加中断检查点
+2. 完成集成测试
+3. 更新文档
