@@ -40,11 +40,16 @@
 - [x] **3.4** 更新 Agent SOUL.md 添加中断检查点 ✅ (11个 Agent)
 - [x] **3.5** 测试控制指令 ✅ (Redis 端到端测试通过)
 
-### Phase 4: 集成测试 (1 天)
+### Phase 4: 集成测试 (1 天) ✅ 完成
 
-- [ ] **4.1** 编写单元测试
-- [ ] **4.2** 端到端测试
-- [ ] **4.3** 文档更新
+- [x] **4.1** 编写单元测试 ✅
+  - tests/test_event_publisher.py (5 tests)
+  - tests/test_check_interrupt.py (7 tests)
+- [x] **4.2** 端到端测试 ✅
+  - scripts/test_e2e_websocket.py
+  - Redis + WebSocket 完整流程验证
+- [x] **4.3** 文档更新 ✅
+  - docs/realtime-push-guide.md
 
 ---
 
@@ -113,17 +118,34 @@ cd edict/backend && uvicorn app.main:app --port 8000
 
 ## 当前状态
 
-**Phase 2 完成**: WebSocket 实时推送 ✅
-- ✅ 前端 WebSocket 客户端已实现
-- ✅ 同步脚本事件发布器已创建
-- ✅ 端到端测试通过 (Redis + WebSocket)
+**✅ 所有 Phase 已完成！**
 
-**Phase 3 完成**: 反向控制通道 ✅
-- ✅ 控制监听器已创建 (`scripts/openclaw_control_listener.py`)
-- ✅ 中断检查工具已创建 (`scripts/check_interrupt.py`)
-- ✅ 11 个 Agent SOUL.md 已添加中断检查点
+| Phase | 状态 | 产物 |
+|-------|------|------|
+| Phase 1 | ✅ | Redis 基础设施 |
+| Phase 2 | ✅ | WebSocket 实时推送 |
+| Phase 3 | ✅ | 反向控制通道 |
+| Phase 4 | ✅ | 单元测试 + 文档 |
 
-**Phase 4 待完成**: 集成测试
-- ⏳ 编写单元测试
-- ⏳ 端到端测试
-- ⏳ 文档更新
+### 测试覆盖
+
+```
+tests/test_event_publisher.py ..... 5 tests ✅
+tests/test_check_interrupt.py ....... 7 tests ✅
+scripts/test_e2e_websocket.py ........ 1 e2e test ✅
+```
+
+### 代码统计
+
+```
+新增文件: 8
+修改文件: 15
+新增代码: ~1500 行
+测试用例: 13 个
+```
+
+### 下一步
+
+1. 在生产环境部署 Redis
+2. 配置 FastAPI 后端 (需要 Python 3.10+)
+3. 监控 WebSocket 连接稳定性
