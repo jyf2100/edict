@@ -1,6 +1,14 @@
 import { useEffect } from 'react';
-import { useStore, DEPTS, isEdict, stateLabel } from '../store';
+import { useStore, DEPTS, isEdict, stateLabel, type ConnectionStatus } from '../store';
 import { api, type OfficialInfo } from '../api';
+import { clsx } from 'clsx';
+
+const WS_STATUS_CONFIG: Record<ConnectionStatus, { icon: string; label: string; cls: string }> = {
+  connected: { icon: '🟢', label: '已连接', cls: 'text-green-400' },
+  connecting: { icon: '🟡', label: '连接中', cls: 'text-yellow-400' },
+  disconnected: { icon: '⚪', label: '未连接', cls: 'text-gray-400' },
+  reconnecting: { icon: '🟠', label: '重连中', cls: 'text-orange-400' },
+};
 
 export default function MonitorPanel() {
   const liveStatus = useStore((s) => s.liveStatus);
@@ -9,6 +17,7 @@ export default function MonitorPanel() {
   const loadAgentsStatus = useStore((s) => s.loadAgentsStatus);
   const setModalTaskId = useStore((s) => s.setModalTaskId);
   const toast = useStore((s) => s.toast);
+  const wsStatus = useStore((s) => s.wsStatus);
 
   useEffect(() => {
     loadAgentsStatus();
@@ -63,6 +72,9 @@ export default function MonitorPanel() {
         <div className="as-panel">
           <div className="as-header">
             <span className="as-title">🔌 Agent 在线状态</span>
+            <span className={clsx('as-ws', WS_STATUS_CONFIG[wsStatus].cls)}>
+              WebSocket: {WS_STATUS_CONFIG[wsStatus].icon} {WS_STATUS_CONFIG[wsStatus].label}
+            </span>
             <span className={`as-gw ${gwCls}`}>Gateway: {gw?.status || '未知'}</span>
             <button className="btn-refresh" onClick={() => loadAgentsStatus()} style={{ marginLeft: 8 }}>
               🔄 刷新
